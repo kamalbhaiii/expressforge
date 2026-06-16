@@ -1,0 +1,32 @@
+{% if language == 'typescript' %}
+import { Request, Response, NextFunction } from 'express';
+import { ZodSchema, ZodError } from 'zod';
+{% else %}
+const { ZodError } = require('zod');
+{% endif %}
+
+{% if language == 'typescript' %}
+export function validate(schema: ZodSchema) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+{% else %}
+function validate(schema) {
+  return (req, res, next) => {
+{% endif %}
+    const result = schema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({
+        error: 'Validation failed',
+        details: result.error.flatten().fieldErrors,
+      });
+      return;
+    }
+    req.body = result.data;
+    next();
+  };
+}
+
+{% if language == 'typescript' %}
+export default validate;
+{% else %}
+module.exports = { validate };
+{% endif %}

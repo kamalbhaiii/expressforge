@@ -1,0 +1,57 @@
+{% if language == 'typescript' %}
+import { Server as HttpServer } from 'http';
+import { Server, Socket } from 'socket.io';
+{% else %}
+{% endif %}
+
+{% if language == 'typescript' %}
+let io: Server;
+
+export function initSocketIO(httpServer: HttpServer): Server {
+{% else %}
+let io;
+
+function initSocketIO(httpServer) {
+{% endif %}
+  io = new Server(httpServer, {
+    cors: {
+      origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+      methods: ['GET', 'POST'],
+      credentials: true,
+    },
+  });
+
+  io.on('connection', (socket{% if language == 'typescript' %}: Socket{% endif %}) => {
+    console.log(`[socket.io] Client connected: ${socket.id}`);
+
+    socket.on('join-room', (room{% if language == 'typescript' %}: string{% endif %}) => {
+      socket.join(room);
+      console.log(`[socket.io] ${socket.id} joined room: ${room}`);
+    });
+
+    socket.on('leave-room', (room{% if language == 'typescript' %}: string{% endif %}) => {
+      socket.leave(room);
+    });
+
+    socket.on('disconnect', () => {
+      console.log(`[socket.io] Client disconnected: ${socket.id}`);
+    });
+  });
+
+  return io;
+}
+
+{% if language == 'typescript' %}
+export function getIO(): Server {
+{% else %}
+function getIO() {
+{% endif %}
+  if (!io) throw new Error('Socket.IO not initialized — call initSocketIO(server) first');
+  return io;
+}
+
+{% if language == 'typescript' %}
+export default { initSocketIO, getIO };
+{% else %}
+module.exports = { initSocketIO, getIO };
+{% endif %}

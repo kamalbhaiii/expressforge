@@ -1,0 +1,34 @@
+{% if language == 'typescript' %}
+import pino, { Logger } from 'pino';
+import pinoHttp from 'pino-http';
+{% else %}
+const pino = require('pino');
+const pinoHttp = require('pino-http');
+{% endif %}
+
+{% if language == 'typescript' %}
+export const logger: Logger = pino({
+{% else %}
+const logger = pino({
+{% endif %}
+  level: process.env.LOG_LEVEL || 'info',
+  transport:
+    process.env.NODE_ENV !== 'production'
+      ? { target: 'pino-pretty', options: { colorize: true } }
+      : undefined,
+});
+
+export const requestLogger = pinoHttp({
+  logger,
+  customLogLevel: (_req, res) => {
+    if (res.statusCode >= 500) return 'error';
+    if (res.statusCode >= 400) return 'warn';
+    return 'info';
+  },
+});
+
+{% if language == 'typescript' %}
+export default logger;
+{% else %}
+module.exports = { logger, requestLogger };
+{% endif %}

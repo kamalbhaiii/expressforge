@@ -1,0 +1,80 @@
+{% if language == 'typescript' %}
+import cron, { ScheduledTask } from 'node-cron';
+{% else %}
+const cron = require('node-cron');
+{% endif %}
+
+{% if language == 'typescript' %}
+interface CronJob {
+  name: string;
+  schedule: string;
+  task: () => void | Promise<void>;
+}
+{% endif %}
+
+{% if language == 'typescript' %}
+const registeredJobs: Map<string, ScheduledTask> = new Map();
+{% else %}
+const registeredJobs = new Map();
+{% endif %}
+
+{% if language == 'typescript' %}
+export function scheduleJob(job: CronJob): ScheduledTask {
+{% else %}
+function scheduleJob(job) {
+{% endif %}
+  if (!cron.validate(job.schedule)) {
+    throw new Error(`Invalid cron schedule '${job.schedule}' for job '${job.name}'`);
+  }
+
+  const task = cron.schedule(job.schedule, async () => {
+    try {
+      console.log(`[cron] Running job: ${job.name}`);
+      await job.task();
+    } catch (err{% if language == 'typescript' %}: unknown{% endif %}) {
+      console.error(`[cron] Job '${job.name}' failed:`, err);
+    }
+  });
+
+  registeredJobs.set(job.name, task);
+  return task;
+}
+
+{% if language == 'typescript' %}
+export function stopJob(name: string): void {
+{% else %}
+function stopJob(name) {
+{% endif %}
+  const task = registeredJobs.get(name);
+  if (task) {
+    task.stop();
+    registeredJobs.delete(name);
+  }
+}
+
+// ── Register your scheduled jobs here ────────────────────────────────────────
+
+// Example: runs every day at midnight
+scheduleJob({
+  name: 'daily-cleanup',
+  schedule: '0 0 * * *',
+  task: async () => {
+    console.log('Running daily cleanup...');
+    // TODO: add cleanup logic
+  },
+});
+
+// Example: runs every 5 minutes
+scheduleJob({
+  name: 'health-ping',
+  schedule: '*/5 * * * *',
+  task: () => {
+    console.log('Health ping at', new Date().toISOString());
+  },
+});
+
+{% if language == 'typescript' %}
+export default { scheduleJob, stopJob };
+{% else %}
+module.exports = { scheduleJob, stopJob };
+{% endif %}

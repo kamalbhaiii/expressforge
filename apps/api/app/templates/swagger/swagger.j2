@@ -1,0 +1,65 @@
+{% if language == 'typescript' %}
+import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
+import { Express } from 'express';
+{% else %}
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
+{% endif %}
+
+const options = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: '{{ project_name }} API',
+      version: '1.0.0',
+      description: 'Auto-generated API documentation for {{ project_name }}',
+    },
+    servers: [
+      {
+        url: process.env.APP_URL || `http://localhost:{{ port }}`,
+        description: 'Development server',
+      },
+    ],
+{% if 'jwt' in auth %}
+    components: {
+      securitySchemes: {
+        BearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+    security: [{ BearerAuth: [] }],
+{% endif %}
+  },
+  apis: ['./src/routes/**/*.{% if language == 'typescript' %}ts{% else %}js{% endif %}', './src/app.{% if language == 'typescript' %}ts{% else %}js{% endif %}'],
+};
+
+const swaggerSpec = swaggerJsdoc(options);
+
+{% if language == 'typescript' %}
+export function setupSwagger(app: Express): void {
+{% else %}
+function setupSwagger(app) {
+{% endif %}
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: '{{ project_name }} API Docs',
+  }));
+
+  // JSON spec endpoint
+  app.get('/api-docs.json', (_req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+  });
+
+  console.log('📄 API docs available at /api-docs');
+}
+
+{% if language == 'typescript' %}
+export default setupSwagger;
+{% else %}
+module.exports = { setupSwagger };
+{% endif %}

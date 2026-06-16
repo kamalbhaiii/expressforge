@@ -1,0 +1,78 @@
+{% if language == 'typescript' %}
+import { Router, Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../config/jwt';
+
+const router = Router();
+{% else %}
+const { Router } = require('express');
+const bcrypt = require('bcryptjs');
+const { signAccessToken, signRefreshToken, verifyRefreshToken } = require('../config/jwt');
+
+const router = Router();
+{% endif %}
+
+// In-memory user store — replace with your DB model
+{% if language == 'typescript' %}
+const users: Record<string, { id: string; email: string; passwordHash: string }> = {};
+{% else %}
+const users = {};
+{% endif %}
+
+router.post('/register', async (req{% if language == 'typescript' %}: Request{% endif %}, res{% if language == 'typescript' %}: Response{% endif %}) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'email and password are required' });
+    }
+    if (Object.values(users).find((u) => u.email === email)) {
+      return res.status(409).json({ error: 'Email already registered' });
+    }
+    const id = crypto.randomUUID();
+    const passwordHash = await bcrypt.hash(password, 12);
+    users[id] = { id, email, passwordHash };
+    const accessToken = signAccessToken(id);
+    const refreshToken = signRefreshToken(id);
+    res.status(201).json({ accessToken, refreshToken });
+  } catch {
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+router.post('/login', async (req{% if language == 'typescript' %}: Request{% endif %}, res{% if language == 'typescript' %}: Response{% endif %}) => {
+  try {
+    const { email, password } = req.body;
+    const user = Object.values(users).find((u) => u.email === email);
+    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    const accessToken = signAccessToken(user.id);
+    const refreshToken = signRefreshToken(user.id);
+    res.json({ accessToken, refreshToken });
+  } catch {
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+router.post('/refresh', (req{% if language == 'typescript' %}: Request{% endif %}, res{% if language == 'typescript' %}: Response{% endif %}) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) return res.status(400).json({ error: 'refreshToken required' });
+    const payload = verifyRefreshToken(refreshToken);
+    const accessToken = signAccessToken(payload.sub{% if language == 'typescript' %} as string{% endif %});
+    res.json({ accessToken });
+  } catch {
+    res.status(401).json({ error: 'Invalid refresh token' });
+  }
+});
+
+router.post('/logout', (_req{% if language == 'typescript' %}: Request{% endif %}, res{% if language == 'typescript' %}: Response{% endif %}) => {
+  // Stateless JWT — client discards tokens
+  res.json({ message: 'Logged out successfully' });
+});
+
+{% if language == 'typescript' %}
+export default router;
+{% else %}
+module.exports = router;
+{% endif %}

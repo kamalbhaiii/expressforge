@@ -1,0 +1,31 @@
+name: Deploy API
+
+on:
+  push:
+    branches: [staging, main]
+    paths:
+      - "apps/api/**"
+
+jobs:
+  deploy:
+    name: Deploy to Render (${{ github.ref_name }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Render deploy (staging)
+        if: github.ref_name == 'staging'
+        run: |
+          curl -f -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_STAGING_SERVICE_ID }}/deploys" \
+            -d '{}'
+
+      - name: Trigger Render deploy (production)
+        if: github.ref_name == 'main'
+        run: |
+          curl -f -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_PROD_SERVICE_ID }}/deploys" \
+            -d '{}'

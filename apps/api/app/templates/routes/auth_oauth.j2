@@ -1,0 +1,37 @@
+{% if language == 'typescript' %}
+import { Router, Request, Response } from 'express';
+import passport from '../config/oauth';
+
+const router = Router();
+{% else %}
+const { Router } = require('express');
+const passport = require('../config/oauth');
+
+const router = Router();
+{% endif %}
+
+router.get(
+  '/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  (req{% if language == 'typescript' %}: Request{% endif %}, res{% if language == 'typescript' %}: Response{% endif %}) => {
+    // Successful auth — redirect to frontend or return token
+    res.json({ message: 'Authenticated', user: req.user });
+  }
+);
+
+router.post('/logout', (req{% if language == 'typescript' %}: Request{% endif %}, res{% if language == 'typescript' %}: Response{% endif %}) => {
+  req.logout(() => {
+    res.json({ message: 'Logged out successfully' });
+  });
+});
+
+{% if language == 'typescript' %}
+export default router;
+{% else %}
+module.exports = router;
+{% endif %}

@@ -1,0 +1,61 @@
+{% if language == 'typescript' %}
+import multer, { StorageEngine, FileFilterCallback } from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { Request } from 'express';
+{% else %}
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+{% endif %}
+
+const UPLOAD_DIR = process.env.UPLOAD_DIR || 'uploads';
+
+// Ensure upload directory exists
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+{% if language == 'typescript' %}
+const storage: StorageEngine = multer.diskStorage({
+{% else %}
+const storage = multer.diskStorage({
+{% endif %}
+  destination: (_req{% if language == 'typescript' %}: Request{% endif %}, _file{% if language == 'typescript' %}: Express.Multer.File{% endif %}, cb{% if language == 'typescript' %}: (err: Error | null, dest: string) => void{% endif %}) => {
+    cb(null, UPLOAD_DIR);
+  },
+  filename: (_req{% if language == 'typescript' %}: Request{% endif %}, file{% if language == 'typescript' %}: Express.Multer.File{% endif %}, cb{% if language == 'typescript' %}: (err: Error | null, name: string) => void{% endif %}) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `${unique}${path.extname(file.originalname)}`);
+  },
+});
+
+{% if language == 'typescript' %}
+const fileFilter = (
+  _req: Request,
+  file: Express.Multer.File,
+  cb: FileFilterCallback
+): void => {
+{% else %}
+const fileFilter = (_req, file, cb) => {
+{% endif %}
+  const allowed = /jpeg|jpg|png|gif|webp|pdf|doc|docx|txt/;
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowed.test(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`File type ${ext} is not allowed`));
+  }
+};
+
+export const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760') }, // 10MB default
+});
+
+{% if language == 'typescript' %}
+export default upload;
+{% else %}
+module.exports = { upload };
+{% endif %}

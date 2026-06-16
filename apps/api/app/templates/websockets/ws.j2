@@ -1,0 +1,65 @@
+{% if language == 'typescript' %}
+import { Server as HttpServer } from 'http';
+import { WebSocketServer, WebSocket, RawData } from 'ws';
+{% else %}
+const { WebSocketServer } = require('ws');
+{% endif %}
+
+{% if language == 'typescript' %}
+let wss: WebSocketServer;
+
+export function initWebSocketServer(httpServer: HttpServer): WebSocketServer {
+{% else %}
+let wss;
+
+function initWebSocketServer(httpServer) {
+{% endif %}
+  wss = new WebSocketServer({ server: httpServer });
+
+  wss.on('connection', (ws{% if language == 'typescript' %}: WebSocket{% endif %}, req) => {
+    const ip = req.socket.remoteAddress;
+    console.log(`[ws] Client connected from ${ip}`);
+
+    ws.on('message', (data{% if language == 'typescript' %}: RawData{% endif %}) => {
+      try {
+        const msg = JSON.parse(data.toString());
+        console.log('[ws] Received:', msg);
+
+        // Echo back
+        ws.send(JSON.stringify({ type: 'ack', payload: msg }));
+      } catch {
+        ws.send(JSON.stringify({ type: 'error', message: 'Invalid JSON' }));
+      }
+    });
+
+    ws.on('close', () => {
+      console.log('[ws] Client disconnected');
+    });
+
+    ws.on('error', (err{% if language == 'typescript' %}: Error{% endif %}) => {
+      console.error('[ws] Error:', err.message);
+    });
+  });
+
+  return wss;
+}
+
+{% if language == 'typescript' %}
+export function broadcast(data: unknown): void {
+{% else %}
+function broadcast(data) {
+{% endif %}
+  if (!wss) return;
+  const msg = JSON.stringify(data);
+  wss.clients.forEach((client) => {
+    if (client.readyState === client.OPEN) {
+      client.send(msg);
+    }
+  });
+}
+
+{% if language == 'typescript' %}
+export default { initWebSocketServer, broadcast };
+{% else %}
+module.exports = { initWebSocketServer, broadcast };
+{% endif %}

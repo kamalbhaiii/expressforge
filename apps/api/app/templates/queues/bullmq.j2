@@ -1,0 +1,58 @@
+{% if language == 'typescript' %}
+import { Queue, Worker, Job, QueueOptions } from 'bullmq';
+import IORedis from 'ioredis';
+{% else %}
+const { Queue, Worker } = require('bullmq');
+const IORedis = require('ioredis');
+{% endif %}
+
+const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
+  maxRetriesPerRequest: null,
+});
+
+{% if language == 'typescript' %}
+export function createQueue(name: string, options?: Partial<QueueOptions>): Queue {
+{% else %}
+function createQueue(name, options) {
+{% endif %}
+  return new Queue(name, { connection, ...options });
+}
+
+{% if language == 'typescript' %}
+export function createWorker<T = unknown>(
+  queueName: string,
+  processor: (job: Job<T>) => Promise<unknown>
+): Worker<T> {
+{% else %}
+function createWorker(queueName, processor) {
+{% endif %}
+  const worker = new Worker(queueName, processor, { connection });
+
+  worker.on('completed', (job{% if language == 'typescript' %}: Job{% endif %}) => {
+    console.log(`Job ${job.id} in queue '${queueName}' completed`);
+  });
+
+  worker.on('failed', (job{% if language == 'typescript' %}: Job | undefined{% endif %}, err{% if language == 'typescript' %}: Error{% endif %}) => {
+    console.error(`Job ${job?.id} in queue '${queueName}' failed:`, err.message);
+  });
+
+  return worker;
+}
+
+// Example queue
+export const emailQueue = createQueue('email');
+
+// Example worker (replace with real processor logic)
+export const emailWorker = createWorker{% if language == 'typescript' %}<{ to: string; subject: string; html: string }>{% endif %}(
+  'email',
+  async (job) => {
+    console.log('Processing email job:', job.data);
+    // TODO: call your email service here
+  }
+);
+
+{% if language == 'typescript' %}
+export default { createQueue, createWorker, emailQueue };
+{% else %}
+module.exports = { createQueue, createWorker, emailQueue };
+{% endif %}

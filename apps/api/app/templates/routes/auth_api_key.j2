@@ -1,0 +1,24 @@
+{% if language == 'typescript' %}
+import { Router, Request, Response } from 'express';
+import { apiKeyAuth } from '../config/apiKey';
+
+const router = Router();
+
+// Example: protect a route with API key middleware
+router.get('/protected', apiKeyAuth, (_req: Request, res: Response) => {
+  res.json({ message: 'Authenticated via API key' });
+});
+
+export default router;
+{% else %}
+const { Router } = require('express');
+const { apiKeyAuth } = require('../config/apiKey');
+
+const router = Router();
+
+router.get('/protected', apiKeyAuth, (_req, res) => {
+  res.json({ message: 'Authenticated via API key' });
+});
+
+module.exports = router;
+{% endif %}

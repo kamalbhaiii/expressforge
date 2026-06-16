@@ -1,0 +1,51 @@
+{% if language == 'typescript' %}
+import winston from 'winston';
+import { Request, Response, NextFunction } from 'express';
+{% else %}
+const winston = require('winston');
+{% endif %}
+
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    process.env.NODE_ENV === 'production'
+      ? winston.format.json()
+      : winston.format.combine(
+          winston.format.colorize(),
+          winston.format.printf(({ level, message, timestamp, ...meta }) => {
+            const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+            return `${timestamp} [${level}]: ${message}${metaStr}`;
+          })
+        )
+  ),
+  transports: [
+    new winston.transports.Console(),
+    ...(process.env.LOG_FILE
+      ? [new winston.transports.File({ filename: process.env.LOG_FILE })]
+      : []),
+  ],
+});
+
+{% if language == 'typescript' %}
+export function requestLogger(req: Request, res: Response, next: NextFunction): void {
+{% else %}
+function requestLogger(req, res, next) {
+{% endif %}
+  const start = Date.now();
+  res.on('finish', () => {
+    logger.info('HTTP request', {
+      method: req.method,
+      url: req.url,
+      status: res.statusCode,
+      ms: Date.now() - start,
+    });
+  });
+  next();
+}
+
+{% if language == 'typescript' %}
+export default logger;
+{% else %}
+module.exports = { logger, requestLogger };
+{% endif %}

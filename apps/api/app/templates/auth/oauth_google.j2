@@ -1,0 +1,53 @@
+{% if language == 'typescript' %}
+import passport from 'passport';
+import { Strategy as GoogleStrategy, Profile } from 'passport-google-oauth20';
+
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
+    },
+    async (_accessToken: string, _refreshToken: string, profile: Profile, done) => {
+      try {
+        // TODO: find or create user from profile.id / profile.emails[0].value
+        done(null, profile);
+      } catch (err) {
+        done(err as Error);
+      }
+    }
+  )
+);
+
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user, done) => done(null, user as Express.User));
+
+export default passport;
+{% else %}
+const passport = require('passport');
+const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
+
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+    },
+    async (_accessToken, _refreshToken, profile, done) => {
+      try {
+        // TODO: find or create user from profile.id / profile.emails[0].value
+        done(null, profile);
+      } catch (err) {
+        done(err);
+      }
+    }
+  )
+);
+
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user, done) => done(null, user));
+
+module.exports = passport;
+{% endif %}

@@ -1,0 +1,58 @@
+{% if language == 'typescript' %}
+import { Router, Request, Response, NextFunction } from 'express';
+{% else %}
+const { Router } = require('express');
+{% endif %}
+
+const router = Router();
+
+{% for route in routes %}
+/**
+ * {{ route.method }} {{ route.path }}
+{% if route.summary %} * {{ route.summary }}{% endif %}
+ */
+{% if language == 'typescript' %}
+router.{{ route.method | lower }}('{{ route.path }}', async (req: Request, res: Response{% if route.auth_required %}, _next: NextFunction{% endif %}): Promise<void> => {
+{% else %}
+router.{{ route.method | lower }}('{{ route.path }}', async (req, res) => {
+{% endif %}
+{% if route.handler_code %}
+{{ route.handler_code | indent(2, first=True) }}
+{% else %}
+  try {
+{% if route.request_body.type == 'json' and route.request_body.fields %}
+    const {
+{% for field in route.request_body.fields %}
+      {{ field.name }}{{ ',' if not loop.last }}
+{% endfor %}
+    } = req.body;
+
+{% for field in route.request_body.fields %}
+{% if field.required %}
+    if ({{ field.name }} === undefined || {{ field.name }} === null) {
+      res.status(400).json({ error: '{{ field.name }} is required' });
+      return;
+    }
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if route.response.shape == 'json_array' %}
+    res.status({{ route.response.success_code }}).json({ data: [], total: 0 });
+{% elif route.response.shape == 'empty' %}
+    res.status({{ route.response.success_code }}).send();
+{% else %}
+    res.status({{ route.response.success_code }}).json({ data: {}, message: 'Success' });
+{% endif %}
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+{% endif %}
+});
+
+{% endfor %}
+
+{% if language == 'typescript' %}
+export default router;
+{% else %}
+module.exports = router;
+{% endif %}

@@ -1,0 +1,40 @@
+{% if language == 'typescript' %}
+import multer from 'multer';
+import multerS3 from 'multer-s3';
+import { S3Client } from '@aws-sdk/client-s3';
+import path from 'path';
+import { Request } from 'express';
+{% else %}
+const multer = require('multer');
+const multerS3 = require('multer-s3');
+const { S3Client } = require('@aws-sdk/client-s3');
+const path = require('path');
+{% endif %}
+
+const s3 = new S3Client({
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
+});
+
+export const upload = multer({
+  storage: multerS3({
+    s3,
+    bucket: process.env.S3_BUCKET || '',
+    acl: 'public-read',
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: (_req{% if language == 'typescript' %}: Request{% endif %}, file{% if language == 'typescript' %}: Express.Multer.File{% endif %}, cb{% if language == 'typescript' %}: (err: Error | null, key: string) => void{% endif %}) => {
+      const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      cb(null, `uploads/${unique}${path.extname(file.originalname)}`);
+    },
+  }),
+  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE || '52428800') }, // 50MB default
+});
+
+{% if language == 'typescript' %}
+export default upload;
+{% else %}
+module.exports = { upload };
+{% endif %}

@@ -1,0 +1,290 @@
+{% if language == 'typescript' %}
+import express, { Application, Request, Response, NextFunction } from 'express';
+import { createServer } from 'http';
+{% else %}
+const express = require('express');
+const { createServer } = require('http');
+{% endif %}
+{% if database | length > 0 or auth | length > 0 or file_upload | length > 0 or email | length > 0 %}
+{% if language == 'typescript' %}
+import dotenv from 'dotenv';
+{% else %}
+const dotenv = require('dotenv');
+{% endif %}
+dotenv.config();
+{% endif %}
+{% if 'cors' in middleware %}
+{% if language == 'typescript' %}
+import cors from 'cors';
+{% else %}
+const cors = require('cors');
+{% endif %}
+{% endif %}
+{% if 'helmet' in middleware %}
+{% if language == 'typescript' %}
+import helmet from 'helmet';
+{% else %}
+const helmet = require('helmet');
+{% endif %}
+{% endif %}
+{% if 'morgan' in middleware %}
+{% if language == 'typescript' %}
+import morgan from 'morgan';
+{% else %}
+const morgan = require('morgan');
+{% endif %}
+{% endif %}
+{% if 'rate_limit' in middleware %}
+{% if language == 'typescript' %}
+import rateLimit from 'express-rate-limit';
+{% else %}
+const rateLimit = require('express-rate-limit');
+{% endif %}
+{% endif %}
+{% if 'compression' in middleware %}
+{% if language == 'typescript' %}
+import compression from 'compression';
+{% else %}
+const compression = require('compression');
+{% endif %}
+{% endif %}
+{% if 'body_parser' in middleware %}
+{% if language == 'typescript' %}
+import bodyParser from 'body-parser';
+{% else %}
+const bodyParser = require('body-parser');
+{% endif %}
+{% endif %}
+{% if 'cookie_parser' in middleware %}
+{% if language == 'typescript' %}
+import cookieParser from 'cookie-parser';
+{% else %}
+const cookieParser = require('cookie-parser');
+{% endif %}
+{% endif %}
+{% if 'winston' in middleware %}
+{% if language == 'typescript' %}
+import { requestLogger } from './config/logger';
+{% else %}
+const { requestLogger } = require('./config/logger');
+{% endif %}
+{% endif %}
+{% if 'pino' in middleware %}
+{% if language == 'typescript' %}
+import { requestLogger } from './config/logger';
+{% else %}
+const { requestLogger } = require('./config/logger');
+{% endif %}
+{% endif %}
+{% if 'jwt' in auth %}
+{% if language == 'typescript' %}
+import authRoutes from './routes/auth';
+{% else %}
+const authRoutes = require('./routes/auth');
+{% endif %}
+{% endif %}
+{% if 'session' in auth %}
+{% if language == 'typescript' %}
+import authSessionRoutes from './routes/auth_session';
+{% else %}
+const authSessionRoutes = require('./routes/auth_session');
+{% endif %}
+{% endif %}
+{% if 'oauth_google' in auth %}
+{% if language == 'typescript' %}
+import authOauthRoutes from './routes/auth_oauth';
+{% else %}
+const authOauthRoutes = require('./routes/auth_oauth');
+{% endif %}
+{% endif %}
+{% if 'api_key' in auth %}
+{% if language == 'typescript' %}
+import authApiKeyRoutes from './routes/auth_api_key';
+{% else %}
+const authApiKeyRoutes = require('./routes/auth_api_key');
+{% endif %}
+{% endif %}
+{% if 'magic_link' in auth %}
+{% if language == 'typescript' %}
+import authMagicLinkRoutes from './routes/auth_magic_link';
+{% else %}
+const authMagicLinkRoutes = require('./routes/auth_magic_link');
+{% endif %}
+{% endif %}
+{% if routes | length > 0 %}
+{% if language == 'typescript' %}
+import customRoutes from './routes/routes';
+{% else %}
+const customRoutes = require('./routes/routes');
+{% endif %}
+{% endif %}
+{% if 'mongodb' in database %}
+{% if language == 'typescript' %}
+import { connectDB } from './config/database';
+{% else %}
+const { connectDB } = require('./config/database');
+{% endif %}
+{% endif %}
+{% if 'postgres_prisma' in database or 'mysql_prisma' in database or 'sqlite_prisma' in database %}
+{% if language == 'typescript' %}
+import prisma from './config/database';
+{% else %}
+const prisma = require('./config/database');
+{% endif %}
+{% endif %}
+{% if 'postgres_sequelize' in database %}
+{% if language == 'typescript' %}
+import { sequelize } from './config/database';
+{% else %}
+const { sequelize } = require('./config/database');
+{% endif %}
+{% endif %}
+{% if 'redis' in database %}
+{% if language == 'typescript' %}
+import redis from './config/redis';
+{% else %}
+const redis = require('./config/redis');
+{% endif %}
+{% endif %}
+{% if websockets | length > 0 %}
+{% if language == 'typescript' %}
+import { initSocketIO } from './config/socket';
+{% else %}
+const { initSocketIO } = require('./config/socket');
+{% endif %}
+{% endif %}
+{% if include_swagger or 'swagger_ui' in middleware %}
+{% if language == 'typescript' %}
+import setupSwagger from './config/swagger';
+{% else %}
+const { setupSwagger } = require('./config/swagger');
+{% endif %}
+{% endif %}
+
+{% if language == 'typescript' %}
+const app: Application = express();
+{% else %}
+const app = express();
+{% endif %}
+const httpServer = createServer(app);
+const PORT = process.env.PORT || {{ port }};
+
+// ── Body parsers ──────────────────────────────────────────────────────────────
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+{% if 'body_parser' in middleware %}
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+{% endif %}
+{% if 'cookie_parser' in middleware %}
+app.use(cookieParser());
+{% endif %}
+
+// ── Security & middleware ─────────────────────────────────────────────────────
+{% if 'cors' in middleware %}
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+  credentials: true,
+}));
+{% endif %}
+{% if 'helmet' in middleware %}
+app.use(helmet());
+{% endif %}
+{% if 'compression' in middleware %}
+app.use(compression());
+{% endif %}
+{% if 'morgan' in middleware %}
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+{% endif %}
+{% if 'winston' in middleware or 'pino' in middleware %}
+app.use(requestLogger);
+{% endif %}
+{% if 'rate_limit' in middleware %}
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+{% endif %}
+
+// ── Swagger / API docs ────────────────────────────────────────────────────────
+{% if include_swagger or 'swagger_ui' in middleware %}
+setupSwagger(app);
+{% endif %}
+
+// ── Health check ──────────────────────────────────────────────────────────────
+app.get('/health', (_req{% if language == 'typescript' %}: Request{% endif %}, res{% if language == 'typescript' %}: Response{% endif %}) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// ── Auth routes ───────────────────────────────────────────────────────────────
+{% if 'jwt' in auth %}
+app.use('/api/auth', authRoutes);
+{% endif %}
+{% if 'session' in auth %}
+app.use('/api/auth', authSessionRoutes);
+{% endif %}
+{% if 'oauth_google' in auth %}
+app.use('/api/auth', authOauthRoutes);
+{% endif %}
+{% if 'api_key' in auth %}
+app.use('/api', authApiKeyRoutes);
+{% endif %}
+{% if 'magic_link' in auth %}
+app.use('/api/auth', authMagicLinkRoutes);
+{% endif %}
+
+// ── Custom routes ─────────────────────────────────────────────────────────────
+{% if routes | length > 0 %}
+app.use('/api', customRoutes);
+{% endif %}
+
+// ── 404 handler ───────────────────────────────────────────────────────────────
+{% if language == 'typescript' %}
+app.use((_req: Request, res: Response) => {
+{% else %}
+app.use((_req, res) => {
+{% endif %}
+  res.status(404).json({ error: 'Not Found' });
+});
+
+// ── Error handler ─────────────────────────────────────────────────────────────
+{% if language == 'typescript' %}
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+{% else %}
+app.use((err, _req, res, _next) => {
+{% endif %}
+  console.error(err.stack);
+  res.status(500).json({ error: 'Internal Server Error' });
+});
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+const start = async () => {
+{% if 'mongodb' in database %}
+  await connectDB();
+{% endif %}
+{% if 'postgres_sequelize' in database %}
+  await sequelize.authenticate();
+  await sequelize.sync({ alter: process.env.NODE_ENV !== 'production' });
+{% endif %}
+  httpServer.listen(PORT, () => {
+    console.log(`🚀  Server running on http://localhost:${PORT}`);
+{% if include_swagger or 'swagger_ui' in middleware %}
+    console.log(`📄  API docs: http://localhost:${PORT}/api-docs`);
+{% endif %}
+  });
+{% if websockets | length > 0 %}
+  initSocketIO(httpServer);
+  console.log('🔌  WebSocket server attached');
+{% endif %}
+};
+
+start().catch(console.error);
+
+{% if language == 'typescript' %}
+export default app;
+{% else %}
+module.exports = app;
+{% endif %}

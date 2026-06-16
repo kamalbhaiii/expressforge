@@ -1,0 +1,21 @@
+{% if language == 'typescript' %}
+import mongoose from 'mongoose';
+
+export const connectDB = async (): Promise<void> => {
+  const uri = process.env.MONGODB_URI as string;
+  await mongoose.connect(uri);
+  console.log('MongoDB connected');
+};
+
+export default mongoose;
+{% else %}
+const mongoose = require('mongoose');
+
+const connectDB = async () => {
+  const uri = process.env.MONGODB_URI;
+  await mongoose.connect(uri);
+  console.log('MongoDB connected');
+};
+
+module.exports = { connectDB, mongoose };
+{% endif %}

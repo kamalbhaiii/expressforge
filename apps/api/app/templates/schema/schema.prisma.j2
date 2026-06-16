@@ -1,0 +1,25 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "{% if database == 'mysql_prisma' %}mysql{% else %}postgresql{% endif %}"
+  url      = env("DATABASE_URL")
+}
+
+{% if auth != 'none' %}
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  {% if auth == 'jwt' or auth == 'session' %}
+  password  String
+  {% endif %}
+  {% if auth == 'oauth_google' %}
+  googleId  String?  @unique
+  name      String?
+  avatar    String?
+  {% endif %}
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+{% endif %}

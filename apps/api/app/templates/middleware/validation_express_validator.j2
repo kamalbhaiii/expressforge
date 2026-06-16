@@ -1,0 +1,30 @@
+{% if language == 'typescript' %}
+import { Request, Response, NextFunction } from 'express';
+import { validationResult, ValidationChain } from 'express-validator';
+{% else %}
+const { validationResult } = require('express-validator');
+{% endif %}
+
+{% if language == 'typescript' %}
+export function handleValidationErrors(req: Request, res: Response, next: NextFunction): void {
+{% else %}
+function handleValidationErrors(req, res, next) {
+{% endif %}
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400).json({
+      error: 'Validation failed',
+      details: errors.array().map((e) => ({ field: e.type, message: e.msg })),
+    });
+    return;
+  }
+  next();
+}
+
+{% if language == 'typescript' %}
+export { body, param, query, header } from 'express-validator';
+export default handleValidationErrors;
+{% else %}
+const { body, param, query, header } = require('express-validator');
+module.exports = { handleValidationErrors, body, param, query, header };
+{% endif %}

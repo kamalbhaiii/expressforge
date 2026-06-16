@@ -1,0 +1,73 @@
+# {{ project_name }}
+
+> Generated with [ExpressForge](https://expressforge.dev) — No-Code Express.js Backend Builder
+
+## Stack
+
+- **Runtime:** Node.js + Express.js
+- **Language:** {{ language | capitalize }}
+- **Port:** {{ port }}
+- **Auth:** {{ auth }}
+- **Database:** {{ database }}
+- **Middleware:** {{ middleware | join(', ') if middleware else 'none' }}
+
+## Quick Start
+
+```bash
+# 1. Install dependencies
+npm install
+{% if database in ['postgres_prisma', 'mysql_prisma'] %}
+
+# 2. Push Prisma schema to database
+npx prisma generate
+npx prisma db push
+{% endif %}
+
+# 2. Copy env file and fill in values
+cp .env.example .env
+
+# 3. Run in development mode
+npm run dev
+```
+
+## Environment Variables
+
+See `.env.example` for all required variables.
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+{% if auth != 'none' %}
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | Login |
+{% if auth == 'jwt' %}
+| POST | `/api/auth/refresh` | Refresh access token |
+| POST | `/api/auth/logout` | Logout |
+{% endif %}
+{% if auth == 'oauth_google' %}
+| GET | `/api/auth/google` | Initiate Google OAuth |
+| GET | `/api/auth/google/callback` | Google OAuth callback |
+{% endif %}
+{% endif %}
+{% if include_tests %}
+
+## Tests
+
+```bash
+npm test
+npm run test:coverage
+```
+{% endif %}
+{% if include_docker %}
+
+## Docker
+
+```bash
+docker compose up --build
+```
+{% endif %}
+
+---
+_Built with ExpressForge · Phase 1 · {{ language | capitalize }}_

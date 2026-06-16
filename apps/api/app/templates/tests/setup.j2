@@ -1,0 +1,30 @@
+{% if language == 'typescript' %}
+import { jest } from '@jest/globals';
+
+// Silence console.error in tests
+jest.spyOn(console, 'error').mockImplementation(() => {});
+
+// Set test environment variables
+process.env.NODE_ENV = 'test';
+process.env.PORT = '{{ port }}';
+{% if auth == 'jwt' %}
+process.env.JWT_SECRET = 'test-jwt-secret-do-not-use-in-production';
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-do-not-use-in-production';
+{% endif %}
+{% if auth == 'session' %}
+process.env.SESSION_SECRET = 'test-session-secret';
+{% endif %}
+{% else %}
+// Silence console.error in tests
+jest.spyOn(console, 'error').mockImplementation(() => {});
+
+process.env.NODE_ENV = 'test';
+process.env.PORT = '{{ port }}';
+{% if auth == 'jwt' %}
+process.env.JWT_SECRET = 'test-jwt-secret-do-not-use-in-production';
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-do-not-use-in-production';
+{% endif %}
+{% if auth == 'session' %}
+process.env.SESSION_SECRET = 'test-session-secret';
+{% endif %}
+{% endif %}

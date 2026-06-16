@@ -1,0 +1,83 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Next.js
+.next/
+out/
+.vercel
+
+# Environment files — never commit real secrets
+# .env.*.example files ARE committed (they are templates with no real values)
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+.env.test
+apps/api/.env
+apps/web/.env
+apps/web/.env.local
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+logs/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+.coverage
+htmlcov/
+.nyc_output/
+
+# Docker
+*.dockerignore
+
+# ZIP artifacts (generated)
+*.zip
+generated/

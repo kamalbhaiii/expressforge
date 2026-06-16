@@ -1,0 +1,36 @@
+{% if language == 'typescript' %}
+import { Request, Response, NextFunction } from 'express';
+import Joi from 'joi';
+{% else %}
+const Joi = require('joi');
+{% endif %}
+
+{% if language == 'typescript' %}
+export function validate(schema: Joi.ObjectSchema) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+{% else %}
+function validate(schema) {
+  return (req, res, next) => {
+{% endif %}
+    const { error, value } = schema.validate(req.body, { abortEarly: false });
+    if (error) {
+      res.status(400).json({
+        error: 'Validation failed',
+        details: error.details.map((d{% if language == 'typescript' %}: Joi.ValidationErrorItem{% endif %}) => ({
+          field: d.path.join('.'),
+          message: d.message,
+        })),
+      });
+      return;
+    }
+    req.body = value;
+    next();
+  };
+}
+
+{% if language == 'typescript' %}
+export { Joi };
+export default validate;
+{% else %}
+module.exports = { validate, Joi };
+{% endif %}

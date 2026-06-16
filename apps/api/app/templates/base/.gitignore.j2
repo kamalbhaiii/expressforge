@@ -1,0 +1,16 @@
+node_modules/
+.env
+{% if language == 'typescript' %}
+dist/
+*.tsbuildinfo
+{% endif %}
+{% if 'postgres_prisma' in database or 'mysql_prisma' in database or 'sqlite_prisma' in database %}
+# Prisma
+prisma/migrations/dev.db
+dev.db
+{% endif %}
+*.log
+npm-debug.log*
+.DS_Store
+coverage/
+.nyc_output/
