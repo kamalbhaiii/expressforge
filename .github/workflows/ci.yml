@@ -95,4 +95,4 @@ jobs:
       - name: Build
         run: cd apps/web && npm run build
         env:
-          NEXT_PUBLIC_API_URL: https://expressforge-api-staging.onrender.com
+          NEXT_PUBLIC_API_URL: https://expressforgestagingserver.kamalbhaiii.de
