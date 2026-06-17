@@ -19,11 +19,11 @@ export async function checkHealth(): Promise<HealthResponse> {
 export async function generateProject(
   config: GenerateConfig,
   aiConfig?: AIConfig,
-  customRoutes?: object[]
+  routes?: object[]
 ): Promise<Blob> {
   const body = {
     ...config,
-    custom_routes: customRoutes ?? [],
+    routes: routes ?? [],
     ...(aiConfig?.api_key
       ? { ai: { provider: aiConfig.provider, api_key: aiConfig.api_key } }
       : {}),

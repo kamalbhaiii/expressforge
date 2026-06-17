@@ -13,7 +13,6 @@ import {
   changePassword, getCurrentUser,
 } from "@/lib/auth";
 import { getApiError } from "@/lib/api";
-import { Nav } from "@/components/Nav";
 import { toast } from "@/components/ui/Toast";
 import type { DeviceInfo } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
@@ -138,13 +137,7 @@ export default function SecuritySettingsPage() {
   if (!isAuthenticated()) return null;
 
   return (
-    <div className="min-h-screen bg-forge-bg">
-      <Nav />
-      <main className="max-w-screen-sm mx-auto px-4 sm:px-6 py-10 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-forge-text">Security</h1>
-          <p className="text-forge-text-muted text-sm mt-1">Manage your password, 2FA, and trusted devices</p>
-        </div>
+    <div className="space-y-6">
 
         {/* ── Two-factor authentication ─────────────────────────────────────── */}
         <Section title="Two-Factor Authentication">
@@ -330,12 +323,6 @@ export default function SecuritySettingsPage() {
           )}
         </Section>
 
-        <nav className="flex gap-3">
-          <a href="/settings/profile" className="text-sm text-forge-text-muted hover:text-forge-text transition-colors">Profile</a>
-          <span className="text-forge-border">·</span>
-          <a href="/settings/security" className="text-sm text-forge-accent font-medium">Security</a>
-        </nav>
-      </main>
     </div>
   );
 }

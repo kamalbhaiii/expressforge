@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Zap, AlertCircle, Layers, Settings2 } from "lucide-react";
+import { Zap, AlertCircle, Layers, Settings2, Save, FolderOpen } from "lucide-react";
 import { AuthPicker } from "@/components/config-builder/AuthPicker";
 import { DatabasePicker } from "@/components/config-builder/DatabasePicker";
 import { FeatureSelector } from "@/components/config-builder/FeatureSelector";
@@ -22,23 +22,28 @@ import { RouteCanvas } from "@/components/builder/RouteCanvas";
 import { RouteFormPanel } from "@/components/builder/RouteFormPanel";
 import { HandlerEditor } from "@/components/builder/HandlerEditor";
 import { Nav } from "@/components/Nav";
-import { generateProject, downloadBlob, checkHealth, getApiError } from "@/lib/api";
+import {
+  generateProject, downloadBlob, checkHealth, getApiError,
+  createProject, updateProject,
+} from "@/lib/api";
 import { useConfigStore } from "@/lib/store";
 import { useRouteStore } from "@/lib/routeStore";
 import { useAuthStore } from "@/lib/authStore";
-import { isValidProjectName } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { isValidProjectName, cn } from "@/lib/utils";
+import { toast } from "@/components/ui/Toast";
+import type { Route } from "@/lib/types";
 
 type Tab = "config" | "routes";
 
 export default function BuilderPage() {
-  const { config, aiConfig, status, error, isServerColdStart, setStatus, setServerColdStart } =
+  const { config, aiConfig, status, error, isServerColdStart, savedProjectId, setStatus, setServerColdStart, setSavedProjectId } =
     useConfigStore();
   const { routes, selectedRouteId } = useRouteStore();
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
   const healthChecked = useRef(false);
   const [tab, setTab] = useState<Tab>("config");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -60,12 +65,38 @@ export default function BuilderPage() {
   const canGenerate = isValidProjectName(config.project_name) && status !== "loading";
   const selectedRoute = useRouteStore.getState().routes.find((r) => r.id === selectedRouteId);
 
+  async function handleSaveProject() {
+    if (!isValidProjectName(config.project_name)) return;
+    setSaving(true);
+    try {
+      if (savedProjectId) {
+        await updateProject(savedProjectId, { name: config.project_name, config, routes: routes as unknown as object[] });
+        toast("Project saved", "success");
+      } else {
+        const project = await createProject(config.project_name, config, routes as unknown as object[]);
+        setSavedProjectId(project.id);
+        toast("Project saved", "success");
+      }
+    } catch (err) {
+      toast(getApiError(err), "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleGenerate() {
     if (!canGenerate) return;
     setStatus("loading");
     try {
-      const blob = await generateProject(config, aiConfig, routes);
+      const blob = await generateProject(config, aiConfig, routes as unknown as object[]);
       downloadBlob(blob, `${config.project_name}.zip`);
+      // Auto-save after successful generation
+      if (savedProjectId) {
+        await updateProject(savedProjectId, { config, routes: routes as unknown as object[] }).catch(() => {});
+      } else {
+        const project = await createProject(config.project_name, config, routes as unknown as object[]).catch(() => null);
+        if (project) setSavedProjectId(project.id);
+      }
       setStatus("success");
       router.push(`/generate?name=${encodeURIComponent(config.project_name)}`);
     } catch (err) {
@@ -90,41 +121,62 @@ export default function BuilderPage() {
         {/* Page header + tabs */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-forge-text">Project Builder</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-forge-text">Project Builder</h1>
+              {savedProjectId && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-forge-accent/10 text-forge-accent border border-forge-accent/20 flex items-center gap-1">
+                  <FolderOpen className="h-3 w-3" /> Saved
+                </span>
+              )}
+            </div>
             <p className="text-forge-text-muted text-sm mt-0.5">
               Configure your stack, define routes, then generate.
             </p>
           </div>
 
-          {/* Tab switcher */}
-          <div className="flex items-center gap-1 bg-forge-muted rounded-xl p-1 self-start sm:self-auto">
-            <button
-              onClick={() => setTab("config")}
-              className={cn(
-                "flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg transition-colors",
-                tab === "config"
-                  ? "bg-forge-surface text-forge-text shadow-sm"
-                  : "text-forge-text-muted hover:text-forge-text"
-              )}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {/* Save button */}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleSaveProject}
+              loading={saving}
+              disabled={saving || !isValidProjectName(config.project_name)}
             >
-              <Settings2 className="h-4 w-4" /> Config
-            </button>
-            <button
-              onClick={() => setTab("routes")}
-              className={cn(
-                "flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg transition-colors",
-                tab === "routes"
-                  ? "bg-forge-surface text-forge-text shadow-sm"
-                  : "text-forge-text-muted hover:text-forge-text"
-              )}
-            >
-              <Layers className="h-4 w-4" /> Routes
-              {routes.length > 0 && (
-                <Badge variant="default" className="ml-1 text-[10px] h-4 px-1.5">
-                  {routes.length}
-                </Badge>
-              )}
-            </button>
+              <Save className="h-4 w-4" />
+              {savedProjectId ? "Save" : "Save Project"}
+            </Button>
+
+            {/* Tab switcher */}
+            <div className="flex items-center gap-1 bg-forge-muted rounded-xl p-1">
+              <button
+                onClick={() => setTab("config")}
+                className={cn(
+                  "flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg transition-colors",
+                  tab === "config"
+                    ? "bg-forge-surface text-forge-text shadow-sm"
+                    : "text-forge-text-muted hover:text-forge-text"
+                )}
+              >
+                <Settings2 className="h-4 w-4" /> Config
+              </button>
+              <button
+                onClick={() => setTab("routes")}
+                className={cn(
+                  "flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg transition-colors",
+                  tab === "routes"
+                    ? "bg-forge-surface text-forge-text shadow-sm"
+                    : "text-forge-text-muted hover:text-forge-text"
+                )}
+              >
+                <Layers className="h-4 w-4" /> Routes
+                {routes.length > 0 && (
+                  <Badge variant="default" className="ml-1 text-[10px] h-4 px-1.5">
+                    {routes.length}
+                  </Badge>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -178,19 +230,17 @@ export default function BuilderPage() {
         {/* Routes tab */}
         {tab === "routes" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100vh-240px)] min-h-[500px]">
-            {/* Route list — left panel */}
             <div className="lg:col-span-3 bg-forge-surface border border-forge-border rounded-xl overflow-hidden flex flex-col">
               <RouteCanvas />
             </div>
 
-            {/* Form panel + handler editor — middle + right */}
             {selectedRoute ? (
               <>
                 <div className="lg:col-span-4 bg-forge-surface border border-forge-border rounded-xl overflow-hidden flex flex-col">
-                  <RouteFormPanel route={selectedRoute} />
+                  <RouteFormPanel route={selectedRoute as Route} />
                 </div>
                 <div className="lg:col-span-5 bg-forge-surface border border-forge-border rounded-xl overflow-hidden flex flex-col">
-                  <HandlerEditor route={selectedRoute} />
+                  <HandlerEditor route={selectedRoute as Route} />
                 </div>
               </>
             ) : (
@@ -207,7 +257,7 @@ export default function BuilderPage() {
           </div>
         )}
 
-        {/* Generate button always visible in routes tab too */}
+        {/* Generate button always visible in routes tab */}
         {tab === "routes" && (
           <div className="mt-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
             <p className="text-xs text-forge-text-dim">

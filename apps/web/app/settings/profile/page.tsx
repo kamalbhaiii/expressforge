@@ -6,7 +6,6 @@ import { Loader2, Save, User } from "lucide-react";
 import { useAuthStore } from "@/lib/authStore";
 import { updateProfile, getCurrentUser } from "@/lib/auth";
 import { getApiError } from "@/lib/api";
-import { Nav } from "@/components/Nav";
 import { toast } from "@/components/ui/Toast";
 
 export default function ProfileSettingsPage() {
@@ -38,14 +37,7 @@ export default function ProfileSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-forge-bg">
-      <Nav />
-      <main className="max-w-screen-sm mx-auto px-4 sm:px-6 py-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-forge-text">Profile</h1>
-          <p className="text-forge-text-muted text-sm mt-1">Manage your public information</p>
-        </div>
-
+    <div className="space-y-6">
         <div className="bg-forge-surface border border-forge-border rounded-2xl p-6 space-y-6">
           {/* Avatar placeholder */}
           <div className="flex items-center gap-4">
@@ -94,19 +86,6 @@ export default function ProfileSettingsPage() {
             </button>
           </form>
         </div>
-
-        <SettingsNav />
-      </main>
-    </div>
-  );
-}
-
-function SettingsNav() {
-  return (
-    <div className="mt-6 flex gap-3">
-      <a href="/settings/profile" className="text-sm text-forge-accent font-medium">Profile</a>
-      <span className="text-forge-border">·</span>
-      <a href="/settings/security" className="text-sm text-forge-text-muted hover:text-forge-text transition-colors">Security</a>
     </div>
   );
 }

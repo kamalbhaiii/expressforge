@@ -26,9 +26,8 @@ export default function ProjectPage() {
 
     getProject(id)
       .then((project: Project) => {
-        // Hydrate stores from saved project
         reset();
-        const { setProjectName, setLanguage, setPort, toggle, setIncludeDocker, setIncludeTests, setIncludeSwagger } =
+        const { setProjectName, setLanguage, setPort, toggle, setIncludeDocker, setIncludeTests, setIncludeSwagger, setSavedProjectId } =
           useConfigStore.getState();
 
         setProjectName(project.config.project_name);
@@ -44,6 +43,7 @@ export default function ProjectPage() {
         setIncludeDocker(project.config.include_docker);
         setIncludeTests(project.config.include_tests);
         setIncludeSwagger(project.config.include_swagger);
+        setSavedProjectId(project.id);
 
         loadRoutes(project.routes ?? []);
         router.replace("/builder");

@@ -3,13 +3,15 @@ import { Loader2 } from "lucide-react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
-  variant?: "primary" | "ghost" | "outline";
+  variant?: "primary" | "secondary" | "ghost" | "outline";
   size?: "sm" | "md" | "lg";
 }
 
 const variantClasses = {
   primary:
     "bg-forge-accent hover:bg-forge-accent-hover text-white font-semibold shadow-lg shadow-forge-accent/20 hover:shadow-forge-accent/30",
+  secondary:
+    "bg-forge-muted hover:bg-forge-surface border border-forge-border text-forge-text font-medium",
   ghost: "bg-transparent hover:bg-forge-muted text-forge-text-muted hover:text-forge-text",
   outline:
     "bg-transparent border border-forge-border hover:border-forge-accent text-forge-text-muted hover:text-forge-text",

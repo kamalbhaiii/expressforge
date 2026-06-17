@@ -11,6 +11,7 @@ interface ConfigStore {
   status: GenerationStatus;
   error: string | null;
   isServerColdStart: boolean;
+  savedProjectId: string | null;
 
   setProjectName: (name: string) => void;
   setLanguage: (lang: GenerateConfig["language"]) => void;
@@ -28,6 +29,7 @@ interface ConfigStore {
 
   setStatus: (status: GenerationStatus, error?: string | null) => void;
   setServerColdStart: (val: boolean) => void;
+  setSavedProjectId: (id: string | null) => void;
   reset: () => void;
 }
 
@@ -60,6 +62,7 @@ export const useConfigStore = create<ConfigStore>()(
       status: "idle",
       error: null,
       isServerColdStart: false,
+      savedProjectId: null,
 
       setProjectName: (name) =>
         set((s) => ({
@@ -100,8 +103,11 @@ export const useConfigStore = create<ConfigStore>()(
       setServerColdStart: (val) =>
         set({ isServerColdStart: val }),
 
+      setSavedProjectId: (id) =>
+        set({ savedProjectId: id }),
+
       reset: () =>
-        set({ config: { ...defaultConfig }, aiConfig: { ...defaultAIConfig }, status: "idle", error: null }),
+        set({ config: { ...defaultConfig }, aiConfig: { ...defaultAIConfig }, status: "idle", error: null, savedProjectId: null }),
     }),
     { name: "expressforge-config" }
   )
