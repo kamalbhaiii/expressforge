@@ -12,7 +12,7 @@ To override environment: set ENVIRONMENT=staging before starting the server.
 import os
 from functools import lru_cache
 from typing import Literal
-from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+from urllib.parse import urlparse, urlunparse, parse_qs
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -97,16 +97,19 @@ class Settings(BaseSettings):
     def needs_ssl(self) -> bool:
         parsed = urlparse(self.database_url)
         params = parse_qs(parsed.query)
-        return params.get("sslmode", [""])[0] == "require"
+        return params.get("sslmode", [""])[0] in ("require", "verify-ca", "verify-full")
 
     @property
     def async_database_url(self) -> str:
-        url = self.database_url.replace("postgresql://", "postgresql+asyncpg://")
-        parsed = urlparse(url)
-        params = parse_qs(parsed.query)
-        params.pop("sslmode", None)
-        clean_query = urlencode({k: v[0] for k, v in params.items()})
-        return urlunparse(parsed._replace(query=clean_query))
+        # asyncpg does not accept any query string params — strip them all.
+        # SSL is handled separately via connect_args.
+        parsed = urlparse(self.database_url)
+        clean = parsed._replace(
+            scheme="postgresql+asyncpg",
+            query="",
+            fragment="",
+        )
+        return urlunparse(clean)
 
 
 @lru_cache
