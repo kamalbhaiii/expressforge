@@ -13,7 +13,7 @@ export default function OnboardingIndex() {
   useEffect(() => {
     if (!isAuthenticated()) { router.replace("/auth/login"); return; }
     if (completed) { router.replace("/dashboard"); return; }
-    router.replace(`/onboarding/step/${step}`);
+    router.replace(`/onboarding/step?n=${step}`);
   }, []);
 
   return null;

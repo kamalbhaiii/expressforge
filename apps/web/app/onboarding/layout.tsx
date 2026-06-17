@@ -4,14 +4,21 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Zap } from "lucide-react";
 import { useAuthStore } from "@/lib/authStore";
+import { useOnboardingStore } from "@/lib/onboardingStore";
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const { complete } = useOnboardingStore();
 
   useEffect(() => {
     if (!isAuthenticated()) router.replace("/auth/login");
   }, []);
+
+  function handleSkip() {
+    complete();
+    router.push("/dashboard");
+  }
 
   return (
     <div className="min-h-screen bg-forge-bg flex flex-col">
@@ -24,7 +31,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
           </span>
         </a>
         <button
-          onClick={() => router.push("/dashboard")}
+          onClick={handleSkip}
           className="text-xs text-forge-text-dim hover:text-forge-text transition-colors"
         >
           Skip setup

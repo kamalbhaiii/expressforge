@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useOnboardingStore } from "@/lib/onboardingStore";
 import { useAuthStore } from "@/lib/authStore";
 import { Step1Welcome } from "@/components/onboarding/Step1Welcome";
@@ -9,14 +9,11 @@ import { Step2Stack } from "@/components/onboarding/Step2Stack";
 import { Step3AI } from "@/components/onboarding/Step3AI";
 import { Step4Project } from "@/components/onboarding/Step4Project";
 
-export default function OnboardingStepPage({
-  params,
-}: {
-  params: { step: string };
-}) {
-  const stepNum = parseInt(params.step, 10);
-
+function OnboardingStepContent() {
   const router = useRouter();
+  const params = useSearchParams();
+  const stepNum = parseInt(params.get("n") ?? "1", 10);
+
   const { isAuthenticated } = useAuthStore();
   const { completed, setStep } = useOnboardingStore();
 
@@ -24,7 +21,7 @@ export default function OnboardingStepPage({
     if (!isAuthenticated()) { router.replace("/auth/login"); return; }
     if (completed) { router.replace("/dashboard"); return; }
     if (isNaN(stepNum) || stepNum < 1 || stepNum > 4) {
-      router.replace("/onboarding/step/1");
+      router.replace("/onboarding/step?n=1");
       return;
     }
     setStep(stepNum);
@@ -34,7 +31,7 @@ export default function OnboardingStepPage({
 
   function go(n: number) {
     setStep(n);
-    router.push(`/onboarding/step/${n}`);
+    router.push(`/onboarding/step?n=${n}`);
   }
 
   switch (stepNum) {
@@ -44,4 +41,12 @@ export default function OnboardingStepPage({
     case 4: return <Step4Project onBack={() => go(3)} />;
     default: return null;
   }
+}
+
+export default function OnboardingStepPage() {
+  return (
+    <Suspense>
+      <OnboardingStepContent />
+    </Suspense>
+  );
 }
