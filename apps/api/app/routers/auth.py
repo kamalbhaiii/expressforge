@@ -11,7 +11,6 @@ Security posture:
 - No enumeration: all error messages are generic
 """
 
-import asyncio
 import uuid
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
@@ -20,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.core.deps import get_current_user
 from app.core.email import (
+    send_account_locked_email,
     send_device_approval_email,
     send_password_reset_email,
     send_verification_email,
@@ -129,13 +129,9 @@ async def register(
     user = await create_user(db, body.email, body.password, body.display_name)
     subject = str(user.id)
 
-    # Send verification email in background
-    email = body.email
-    async def _send_verification() -> None:
-        raw_token = await create_email_verification(db, user.id)
-        await send_verification_email(email, raw_token)
-
-    background.add_task(asyncio.create_task, _send_verification())
+    # Generate token now (while DB session is open), send email in background
+    raw_token = await create_email_verification(db, user.id)
+    background.add_task(send_verification_email, body.email, raw_token)
 
     return TokenResponse(
         access_token=create_access_token(subject),
@@ -172,7 +168,7 @@ async def login(
             await record_failed_attempt(db, user, settings.account_lockout_minutes)
             if is_locked(user):
                 email_addr = get_email(user)
-                background.add_task(asyncio.ensure_future, _noop())
+                background.add_task(send_account_locked_email, email_addr, settings.account_lockout_minutes)
         raise _INVALID
 
     if is_locked(user):
@@ -195,7 +191,7 @@ async def login(
             raw_token = await create_device_token(
                 db, user.id, fp, fp_label, settings.device_token_expire_minutes
             )
-            background.add_task(asyncio.ensure_future, send_device_approval_email(email_addr, raw_token, fp_label))
+            background.add_task(send_device_approval_email, email_addr, raw_token, fp_label)
             return TokenResponse(
                 access_token="",
                 refresh_token="",
@@ -218,8 +214,6 @@ async def login(
     )
 
 
-async def _noop() -> None:
-    pass
 
 
 # ── TOTP verification ─────────────────────────────────────────────────────────
@@ -355,7 +349,7 @@ async def forgot_password(
     user = await get_user_by_email(db, body.email)
     if user:
         raw_token = await create_password_reset_token(db, user.id)
-        background.add_task(asyncio.ensure_future, send_password_reset_email(body.email, raw_token))
+        background.add_task(send_password_reset_email, body.email, raw_token)
     # Always return 200 — never reveal if email exists
     return {"message": "If that email is registered, a reset link was sent"}
 
