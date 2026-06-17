@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { AuthForm } from "./AuthForm";
+import { useOnboardingStore } from "@/lib/onboardingStore";
 import type { TokenResponse } from "@/lib/types";
 
 interface AuthModalProps {
@@ -14,6 +15,7 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose, onSuccess, redirectOnSuccess }: AuthModalProps) {
   const router = useRouter();
+  const { completed, reset } = useOnboardingStore();
 
   if (!isOpen) return null;
 
@@ -29,10 +31,16 @@ export function AuthModal({ isOpen, onClose, onSuccess, redirectOnSuccess }: Aut
       return;
     }
     onSuccess?.();
+    onClose();
+    // New users (onboarding not yet completed) go through onboarding
+    if (!completed) {
+      reset();
+      router.push("/onboarding");
+      return;
+    }
     if (redirectOnSuccess) {
       router.push(redirectOnSuccess);
     }
-    onClose();
   }
 
   return (

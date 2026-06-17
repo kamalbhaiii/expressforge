@@ -55,14 +55,14 @@ export const useAuthStore = create<AuthState>()(
           // Persist user so nav shows email immediately after refresh
           user: state.user,
         }),
-        onRehydrateStorage: () => (state) => {
-          if (state) {
-            wireSession(
-              () => ({ access: state.accessToken, refresh: state.refreshToken }),
-              (access, refresh) => state.setTokens(access, refresh),
-              () => state.logout(),
-            );
-          }
+        onRehydrateStorage: () => () => {
+          // Re-wire using live getState() so closures always read current state,
+          // not the stale snapshot that existed at rehydration time.
+          wireSession(
+            () => ({ access: useAuthStore.getState().accessToken, refresh: useAuthStore.getState().refreshToken }),
+            (access, refresh) => useAuthStore.getState().setTokens(access, refresh),
+            () => useAuthStore.getState().logout(),
+          );
         },
       }
     ),

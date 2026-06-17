@@ -3,17 +3,21 @@
 import { useRouter } from "next/navigation";
 import { Zap } from "lucide-react";
 import { AuthForm } from "@/components/auth/AuthForm";
+import { useOnboardingStore } from "@/lib/onboardingStore";
 import type { TokenResponse } from "@/lib/types";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { reset } = useOnboardingStore();
 
   function handleSuccess(res: TokenResponse) {
     if (res.requires_device_approval) {
       router.push("/auth/device-approval?pending=true");
       return;
     }
-    router.push("/dashboard");
+    // New users always start onboarding from step 1
+    reset();
+    router.push("/onboarding");
   }
 
   return (

@@ -12,6 +12,7 @@ Select your stack, define routes visually, download a production-ready Express.j
 - [Tech Stack](#tech-stack)
 - [Monorepo Structure](#monorepo-structure)
 - [Feature Scope](#feature-scope)
+- [Onboarding Flow](#onboarding-flow)
 - [Local Development](#local-development)
 - [Environment Variables](#environment-variables)
 - [Running Tests](#running-tests)
@@ -87,6 +88,12 @@ expressforge/
 │   │   │   ├── auth/
 │   │   │   │   ├── AuthForm.tsx         # Reusable login/register form
 │   │   │   │   └── AuthModal.tsx        # Modal wrapper around AuthForm
+│   │   │   ├── onboarding/
+│   │   │   │   ├── StepShell.tsx        # Shared progress bar + card + nav buttons
+│   │   │   │   ├── Step1Welcome.tsx     # Feature overview
+│   │   │   │   ├── Step2Stack.tsx       # Language + port picker
+│   │   │   │   ├── Step3AI.tsx          # BYOK AI key setup
+│   │   │   │   └── Step4Project.tsx     # First project name + builder CTA
 │   │   │   ├── dashboard/
 │   │   │   │   └── ProjectCard.tsx      # Project card with actions
 │   │   │   ├── builder/
@@ -104,11 +111,16 @@ expressforge/
 │   │   │       ├── Phase2Pickers.tsx     # FileUpload, Email, Queues, WebSockets
 │   │   │       ├── AIConfigPicker.tsx    # BYOK provider + key input
 │   │   │       └── PreviewPane.tsx       # Live file-tree preview
+│   │   │   └── onboarding/
+│   │   │       ├── layout.tsx           # Minimal header + skip link
+│   │   │       ├── page.tsx             # Redirects to /onboarding/step/[current]
+│   │   │       └── step/[step]/page.tsx # Dynamic step renderer
 │   │   └── lib/
 │   │       ├── http.ts                  # Axios instance + silent JWT refresh interceptor
 │   │       ├── api.ts                   # Generate + project CRUD + AI handler calls
 │   │       ├── auth.ts                  # All auth calls + device fingerprint
 │   │       ├── types.ts                 # Single source of truth for all domain types
+│   │       ├── onboardingStore.ts       # Zustand onboarding state (persisted, localStorage)
 │   │       ├── store.ts                 # Zustand config store (extended for Phase 2)
 │   │       ├── authStore.ts             # Zustand auth state (persisted)
 │   │       ├── routeStore.ts            # Zustand route builder state + AI generation
@@ -232,6 +244,30 @@ cors · helmet · rate_limit · morgan · compression · body_parser · cookie_p
 | Gemini | `gemini-1.5-flash` |
 
 Used for: README generation, `.env.example` comments, and route handler code generation. Key never stored.
+
+---
+
+## Onboarding Flow
+
+New users are guided through a 4-step setup wizard on first sign-up. The flow is fully client-side (Zustand + localStorage — no DB column needed) and can be skipped at any step.
+
+| Step | Route | What happens |
+|------|-------|-------------|
+| 1 · Welcome | `/onboarding/step/1` | Overview of ExpressForge features — personal greeting using display name |
+| 2 · Your Stack | `/onboarding/step/2` | Pick default **language** (TypeScript / JavaScript) and **port** (preset or custom) |
+| 3 · AI Setup | `/onboarding/step/3` | Optionally supply a **BYOK LLM key** (Anthropic / OpenAI / Gemini). Key stored in localStorage only — never sent to ExpressForge servers |
+| 4 · First Project | `/onboarding/step/4` | Name the first project → redirects straight to the **Builder** pre-seeded with all chosen preferences |
+
+**Routing rules:**
+- After **register** → always redirect to `/onboarding` (step 1)
+- After **login** (returning user, `onboarding.completed = true`) → skip to `/dashboard`
+- Visiting `/dashboard` or `/builder` without completing onboarding → redirect to `/onboarding`
+- "Skip setup" link in the header exits the wizard and marks it complete
+- Onboarding state key: `expressforge-onboarding` in localStorage
+
+**What gets pre-applied:**
+- Language + port → seeded into `useConfigStore` (builder defaults)
+- AI provider + key → seeded into `useConfigStore` AI section so the AI tab is ready to use
 
 ---
 
@@ -424,6 +460,26 @@ DELETE /projects/:id   → Soft delete
 ---
 
 ## Changelog
+
+### v2.2.0 — June 2026 (Onboarding + Auth Fixes)
+
+**Multi-step onboarding wizard**
+- New 4-step onboarding flow at `/onboarding/step/[1-4]` for all new users
+- Step 1 — Welcome: personal greeting + feature overview cards
+- Step 2 — Your Stack: language (TypeScript / JavaScript) picker + port selector (presets + custom input)
+- Step 3 — AI Setup: BYOK LLM key setup with provider selector (Anthropic, OpenAI, Gemini), show/hide key toggle, security notice, and skip option
+- Step 4 — First Project: project name input, setup summary card, "Open Builder" CTA pre-seeded with all onboarding preferences, alternative "Go to Dashboard" path
+- `StepShell` component: shared progress bar with step indicators (completed ✓, active, pending), navigation buttons (Back / Continue), step counter footer
+- `useOnboardingStore` (Zustand + `persist`): tracks `completed`, `step`, and `preferences` in `expressforge-onboarding` localStorage key
+- Register page + `AuthModal` redirect new users to `/onboarding` instead of `/dashboard`
+- Dashboard and Builder pages guard against unauthenticated + onboarding-incomplete states
+- "Skip setup" link in onboarding header exits wizard immediately
+
+**Auth bugfix — "Not authenticated" on login**
+- Root cause: `onRehydrateStorage` in `authStore.ts` was passing stale snapshot closures to `wireSession` — after page reload, the axios interceptor's `_getTokens` function read frozen pre-rehydration values, so newly-set tokens were invisible and requests went out without an Authorization header
+- Fix: `onRehydrateStorage` now calls `wireSession` with `useAuthStore.getState()` live closures so token reads are always current
+
+---
 
 ### v2.1.0 — June 2026 (Phase 2 Template Engine + Deep Testing)
 

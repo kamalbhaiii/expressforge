@@ -29,6 +29,7 @@ import {
 import { useConfigStore } from "@/lib/store";
 import { useRouteStore } from "@/lib/routeStore";
 import { useAuthStore } from "@/lib/authStore";
+import { useOnboardingStore } from "@/lib/onboardingStore";
 import { isValidProjectName, cn } from "@/lib/utils";
 import { toast } from "@/components/ui/Toast";
 import type { Route } from "@/lib/types";
@@ -40,15 +41,15 @@ export default function BuilderPage() {
     useConfigStore();
   const { routes, selectedRouteId } = useRouteStore();
   const { isAuthenticated } = useAuthStore();
+  const { completed } = useOnboardingStore();
   const router = useRouter();
   const healthChecked = useRef(false);
   const [tab, setTab] = useState<Tab>("config");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.replace("/auth/login");
-    }
+    if (!isAuthenticated()) { router.replace("/auth/login"); return; }
+    if (!completed) { router.replace("/onboarding"); return; }
   }, []);
 
   useEffect(() => {

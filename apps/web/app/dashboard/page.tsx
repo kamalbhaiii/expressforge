@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Search, SortAsc, Loader2, FolderOpen } from "lucide-react";
 import { useAuthStore } from "@/lib/authStore";
+import { useOnboardingStore } from "@/lib/onboardingStore";
 import { listProjects } from "@/lib/api";
 import { Nav } from "@/components/Nav";
 import { ProjectCard } from "@/components/dashboard/ProjectCard";
@@ -17,6 +18,7 @@ type SortKey = "updated_at" | "created_at" | "name";
 export default function DashboardPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const { completed } = useOnboardingStore();
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +28,10 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!isAuthenticated()) {
       router.replace("/auth/login");
+      return;
+    }
+    if (!completed) {
+      router.replace("/onboarding");
       return;
     }
     listProjects()
