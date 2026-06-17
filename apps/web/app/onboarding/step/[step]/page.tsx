@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useOnboardingStore } from "@/lib/onboardingStore";
 import { useAuthStore } from "@/lib/authStore";
@@ -12,10 +12,9 @@ import { Step4Project } from "@/components/onboarding/Step4Project";
 export default function OnboardingStepPage({
   params,
 }: {
-  params: Promise<{ step: string }>;
+  params: { step: string };
 }) {
-  const { step: stepParam } = use(params);
-  const stepNum = parseInt(stepParam, 10);
+  const stepNum = parseInt(params.step, 10);
 
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
