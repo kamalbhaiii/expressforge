@@ -21,19 +21,12 @@ redis[hiredis]==5.0.7
 # Email
 resend==2.3.0
 
+# HTTP client (used by AI providers and httpx async transport)
+httpx==0.27.0
+
 # LLM providers — all optional; installed for BYOK support
 anthropic==0.28.0
 openai==1.35.13
 google-generativeai==0.7.2
 
 python-multipart==0.0.9
-
-# Testing
-pytest==8.2.2
-pytest-asyncio==0.23.7
-pytest-cov==5.0.0
-httpx==0.27.0
-
-# Dev / CI tooling
-ruff==0.4.10
-black==24.4.2

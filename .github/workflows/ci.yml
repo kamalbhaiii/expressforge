@@ -47,7 +47,7 @@ jobs:
           cache-dependency-path: apps/api/requirements.txt
 
       - name: Install dependencies
-        run: pip install -r apps/api/requirements.txt
+        run: pip install -r apps/api/requirements-dev.txt
 
       - name: Lint (Ruff)
         run: cd apps/api && ruff check .
